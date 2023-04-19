@@ -17,6 +17,8 @@ mod cmd_api;
 mod cmd_auth;
 mod cmd_disk;
 mod cmd_docs;
+mod cmd_instance_serial;
+
 mod cmd_version;
 mod config;
 mod context;
@@ -110,7 +112,11 @@ async fn main() {
         .subcommand(cmd_api::CmdApi::command())
         .subcommand(cmd_docs::CmdDocs::command())
         .subcommand(cmd_version::CmdVersion::command())
-        .add_subcommand("disk import", cmd_disk::CmdDiskImport::command());
+        .add_subcommand("disk import", cmd_disk::CmdDiskImport::command())
+        .add_subcommand(
+            "instance serial",
+            cmd_instance_serial::CmdInstanceSerial::command(),
+        );
 
     let matches = cmd.clone().get_matches();
 
@@ -147,6 +153,13 @@ async fn main() {
             cmd_docs::CmdDocs::from_arg_matches(sub_matches)
                 .unwrap()
                 .run(&cmd)
+                .await
+        }
+
+        Some(("instance", sub_matches)) if sub_matches.subcommand_name() == Some("serial") => {
+            cmd_instance_serial::CmdInstance::from_arg_matches(sub_matches)
+                .unwrap()
+                .run(&mut ctx)
                 .await
         }
 
@@ -194,8 +207,8 @@ fn xxx<'a>(command: CliCommand) -> Option<&'a str> {
         CliCommand::InstanceDelete => Some("instance delete"),
         CliCommand::InstanceMigrate => None, // TODO delete from API?
         CliCommand::InstanceReboot => Some("instance reboot"),
-        CliCommand::InstanceSerialConsole => None, // TODO not sure how to handle this
-        CliCommand::InstanceSerialConsoleStream => None, // Ditto
+        CliCommand::InstanceSerialConsole => None, // Special-cased
+        CliCommand::InstanceSerialConsoleStream => None, // Special-cased
         CliCommand::InstanceStart => Some("instance start"),
         CliCommand::InstanceStop => Some("instance stop"),
         CliCommand::InstanceExternalIpList => Some("instance external-ip list"),
