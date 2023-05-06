@@ -96,6 +96,12 @@ pub struct CmdInstanceSerialConsole {
 }
 
 impl CmdInstanceSerialConsole {
+    #[cfg(target_os = "windows")]
+    pub async fn run(&self, _ctx: &mut crate::context::Context) -> Result<()> {
+        anyhow::bail!("Sorry, this subcommand isn't supported on Windows");
+    }
+
+    #[cfg(not(target_os = "windows"))]
     // cli process becomes an interactive remote shell.
     pub async fn run(&self, ctx: &mut crate::context::Context) -> Result<()> {
         let mut req = ctx
@@ -197,10 +203,13 @@ impl CmdInstanceSerialHistory {
         if self.json {
             println!("{}", serde_json::to_string(&data)?);
         } else {
-            let stdin = tokio::io::stdin();
-            let stdout = tokio::io::stdout();
-            let mut tty = thouart::Console::new(stdin, stdout, None).await?;
-            tty.write_stdout(&data.data).await?;
+            #[cfg(target_os = "windows")]
+            anyhow::bail!("Sorry, only --json is supported on Windows for this subcommand");
+            #[cfg(not(target_os = "windows"))]
+            {
+                let mut tty = thouart::Console::new_stdio(None).await?;
+                tty.write_stdout(&data.data).await?;
+            }
         }
         Ok(())
     }
